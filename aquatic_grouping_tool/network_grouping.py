@@ -14,10 +14,10 @@ import arcpy, os
 from arcpy.na import *
 
 #get parameters from arc tool
-species_pts = arcpy.GetParameterAsText(0)
-network = arcpy.GetParameterAsText(1)
-dams = arcpy.GetParameterAsText(2)
-sep_dist = arcpy.GetParameterAsText(3)
+species_pts = arcpy.GetParameterAsText(0) #point layer that includes aquatic species observation points
+network = arcpy.GetParameterAsText(1) #network dataset created from river flowlines
+dams = arcpy.GetParameterAsText(2) #optional - point layer representing barriers (has to be snapped to network river flowlines)
+sep_dist = arcpy.GetParameterAsText(3) #separation distance
 scratchGeodatabase = "in_memory"
 
 #set environment settings
