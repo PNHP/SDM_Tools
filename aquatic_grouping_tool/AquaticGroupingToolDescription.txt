@@ -1,0 +1,36 @@
+Aquatic Grouping Tool Description
+
+The aquatic grouping tool assigns a unique group to observation points that fall within a user-specified separation distance from one another measured along a line. Input parameters for the tool include the species observation layer that includes the observations you wish to group, a network dataset created from river flowlines, an optional barrier/dams layer, and a user-specified separation distance. The following provides an explanation of the parameters used in the tool and any necessary steps to prepare layers prior to use in the tool.
+
+Species Observation Layer:
+	
+The species observation layer should be a feature class or feature layer that includes all observations you wish to group. If you have multiple species you wish to group separately contained within the same feature layer, you must run these groupings separately. Future iterations of this tool plan to deal with this in a loop that will allow for multiple species within the same layer to be grouped separately. **IMPORTANT – this tool makes direct changes to the input species observation data by adding a field labeled ‘groups’ to the end and filling with a group number. If you wish to retain the original data without changes, please make a copy of the data prior to running this tool.
+
+Flowline Network Dataset:
+
+The flowlines used in the tool must be made into a network dataset prior to being used as input. To create a network dataset, follow these guidelines:
+1.) create a new feature dataset
+2.) add the flowlines layer you wish to use to the feature dataset
+3.) right-click on the feature dataset and click New -> Network Dataset...
+4.) follow the steps in the Network Dataset Wizard. If you are unsure of the options to select, follow these guidelines:
+	- select your flowlines layer when asked to select the features classes that will participate in the network dataset
+	- select No for Do you want to model turns in this network?
+	- select None for How would you like to model the elevation of your network features?
+	- Select No for Do you want to establish driving directions for this network dataset?
+	- select the checkbox for Build Service Area Index
+	- use default settings for the rest of the options
+Once created, this network dataset will be used as the parameter for the aquatic grouping tool.
+
+Barriers/Dams Layer (optional):
+
+The aquatic grouping tool has the option of including a barrier layer that will split groups upstream and downstream of a barrier. Dams, areas of point source pollution, or other barriers to upstream and downstream movement can be included in this layer, but all barriers must be represented as points. The point layer used as barriers must be snapped to the network flowlines prior to use in the tool. To snap the points to the flowlines, take the following steps:
+1.) open the Snap (editing) tool in ArcMap Desktop
+2.) include the barriers point layer as your input features **NOTE THAT THIS TOOL WILL PERMANENTLY CHANGE YOUR ORIGINAL DATA. Create a copy of your original data if you wish to have an unchanged backup
+3.) include the flowlines as the Snap Environment
+4.) Choose 'EDGE' for Type and select a distance the distance at which you wish to snap features (you may have to try a few different distances to get the most accurate snapping affect
+
+Separation Distance (Meters):
+The separation distance is the distance along the flowline within which observations will be assigned the same group. If 1000 is chosen, all observations that are within 1000 meters of one another along the flowline path will be assigned the same group (assuming no barrier is between).
+
+
+
