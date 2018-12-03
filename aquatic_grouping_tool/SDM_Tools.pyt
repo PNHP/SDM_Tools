@@ -10,7 +10,7 @@
 #-------------------------------------------------------------------------------
 
 #import libraries
-import arcpy, os
+import arcpy, os, pandas
 from arcpy.na import *
 
 #set environment settings and check out extensions
@@ -25,7 +25,7 @@ class Toolbox(object):
         self.alias = "SDM Tools"
 
         # List of tool classes assocaited with this toolbox
-        self.tools = [AquaticGrouping]
+        self.tools = [AquaticGrouping,ExportCSV]
 
 class AquaticGrouping(object):
     def __init__(self):
@@ -287,4 +287,149 @@ class AquaticGrouping(object):
 
         #delete temporary fields and datasets
         arcpy.Delete_management("in_memory")
+        return
+
+class ExportCSV(object):
+    def __init__(self):
+        self.label = "Export to CSV Format"
+        self.description = """The Export to CSV Format tool exports the QCd network grouping results to a .csv file with standardized column names to be used as input into the random forest models."""
+        self.canRunInBackground = False
+
+    def getParameterInfo(self):
+        presence_flowlines = arcpy.Parameter(
+            displayName = "Presence Flowlines (QC'd result from the Aquatic Network Grouping Tool)",
+            name = "presence_flowlines",
+            datatype = "GPFeatureLayer",
+            parameterType = "Required",
+            direction = "Input")
+
+        uid = arcpy.Parameter(
+            displayName = "UID Field (use COMID for aquatic modeling)",
+            name = "uid",
+            datatype = "Field",
+            parameterType = "Required",
+            direction = "Input")
+
+        uid.parameterDependencies = [presence_flowlines.name]
+
+        species_code = arcpy.Parameter(
+            displayName = "SPECIES_CODE Field",
+            name = "species_code",
+            datatype = "Field",
+            parameterType = "Required",
+            direction = "Input")
+
+        species_code.parameterDependencies = [presence_flowlines.name]
+
+        group_id = arcpy.Parameter(
+            displayName = "GROUP_ID Field",
+            name = "group_id",
+            datatype = "Field",
+            parameterType = "Required",
+            direction = "Input")
+
+        group_id.parameterDependencies = [presence_flowlines.name]
+
+        ra = arcpy.Parameter(
+            displayName = "RA Field",
+            name = "ra",
+            datatype = "Field",
+            parameterType = "Optional",
+            direction = "Input")
+
+        ra.parameterDependencies = [presence_flowlines.name]
+
+        obsdate = arcpy.Parameter(
+            displayName = "OBSDATE Field",
+            name = "obsdate",
+            datatype = "Field",
+            parameterType = "Optional",
+            direction = "Input")
+
+        obsdate.parameterDependencies = [presence_flowlines.name]
+
+        csv_folder = arcpy.Parameter(
+            displayName = "Ouput Folder",
+            name = "csv_folder",
+            datatype = "DEFolder",
+            parameterType = "Required",
+            direction = "Input")
+
+        params = [presence_flowlines,uid,species_code,group_id,ra,obsdate,csv_folder]
+        return params
+
+    def isLicensed(self):
+        return True
+
+    def updateParameters(self,params):
+        return
+
+    def updateMessages(self,params):
+        return
+
+    def execute(self,params,messages):
+        presence_flowlines = params[0].valueAsText #QCd presence flowlines
+        uid = params[1].valueAsText #comid field
+        species_code = params[2].valueAsText #species_code field
+        group_id = params[3].valueAsText #group_id field
+        ra = params[4].valueAsText #ra field
+        obsdate = params[5].valueAsText #obsdate field
+        csv_folder = params[6].valueAsText
+
+        with arcpy.da.SearchCursor(presence_flowlines,species_code) as cursor:
+            for row in cursor:
+                sp_code = row[0]
+
+        # dictionary - string in old name defines new name
+        fldsNamesDict={uid:'UID',species_code:'SPECIES_CODE',group_id:'GROUP_ID',ra:'RA',obsdate:'OBSDATE'}
+        if ra:
+            fldsNamesDict[ra] = 'RA'
+
+        if obsdate:
+            fldsNamesDict[obsdate] = 'OBSDATE'
+
+        # list of strings
+        fldsNames=list(fldsNamesDict.keys())
+
+        # new fieldmappings object
+        fieldmappings=arcpy.FieldMappings()
+        # load input fc to fieldmappings object
+        fieldmappings.addTable(presence_flowlines)
+
+        #remove fieldmaps for those fields that are not needed in the output joined fc
+        fields_to_delete = [f.name for f in fieldmappings.fields if f.name not in fldsNames]
+        for field in fields_to_delete:
+            fieldmappings.removeFieldMap(fieldmappings.findFieldMapIndex(field))
+
+        # fields of input fc
+        flds=fieldmappings.fieldMappings
+        # INDEX
+        i=0
+        # loop over fields
+        for fld in flds:
+            # loop - which string from dictionary is in old field name? what will be new name?
+            for fldName in fldsNames:
+                if fldName in fld.getInputFieldName(0):
+                    # SET NEW FIELD NAME
+                    of=fld.outputField
+                    of.name=fldsNamesDict[fldName]
+                    fld.outputField=of
+            # REPLACE FIELDMAP
+            fieldmappings.replaceFieldMap (i, fld)
+            # INCREASING INDEX
+            i=i+1
+        # export fc to shp using field mapping with new fields names
+        arcpy.TableToTable_conversion(presence_flowlines,csv_folder,sp_code+'.csv',"",fieldmappings)
+
+        field_order = ["UID","SPECIES_CODE","GROUP_ID","RA","OBSDATE"]
+        if ra:
+            field_order.append("RA")
+        if obsdate:
+            field_order.append("OBSDATE")
+
+        csv = os.path.join(csv_folder,sp_code+'.csv')
+        df = pandas.read_csv(csv)
+        df_reorder = df[field_order]
+        df_reorder.to_csv(csv,index=False)
+
         return
