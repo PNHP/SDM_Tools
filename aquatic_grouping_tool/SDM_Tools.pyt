@@ -158,7 +158,7 @@ class AquaticGrouping(object):
             species_lyrs.append(pys)
 
         # merge the point layers together
-        species_pt = arcpy.Merge_management([pts,lns,pys],"species_pt")
+        species_pt = arcpy.Merge_management(species_lyrs,"species_pt")
 
         #calculate separation distance to be used in tools. use half of original minus
         #1 to account for 1 meter buffer and overlapping buffers
@@ -242,7 +242,13 @@ class AquaticGrouping(object):
         arcpy.AddMessage("Joining COMID")
         #join species_pt layer with catchments to assign COMID
         sp_join = arcpy.SpatialJoin_analysis(species_pt,catchments,"sp_join","JOIN_ONE_TO_ONE","KEEP_COMMON","","INTERSECT")
-        sp_join = arcpy.DeleteIdentical_management(sp_join,["GROUP_ID","COMID"])
+        sp_join = arcpy.DeleteIdentical_management(sp_join,["GROUP_ID","FEATUREID"])
+        if len(arcpy.ListFields(sp_join,"COMID")) == 0:
+            arcpy.AddField_management(sp_join,"COMID","LONG")
+            with arcpy.da.UpdateCursor(sp_join,["FEATUREID","COMID"]) as cursor:
+                for row in cursor:
+                    row[1] = str(row[0])
+                    cursor.updateRow(row)
 
         #obtain list of duplicate COMID because these are reaches assigned to multiple groups
         freq = arcpy.Frequency_analysis(sp_join,"freq","COMID")
