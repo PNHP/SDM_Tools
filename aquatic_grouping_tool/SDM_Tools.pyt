@@ -288,6 +288,7 @@ class AquaticGrouping(object):
         flowlines_lyr = arcpy.MakeFeatureLayer_management(flowlines,"flowlines_lyr",expression)
         arcpy.AddJoin_management(flowlines_lyr,"COMID",sp_join,"COMID")
 
+        arcpy.env.qualifiedFieldNames = False
         #export presence flowlines
         arcpy.CopyFeatures_management(flowlines_lyr,output_lines)
 
