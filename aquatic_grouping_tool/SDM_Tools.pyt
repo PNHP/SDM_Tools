@@ -217,9 +217,9 @@ class AquaticGrouping(object):
 
 
         #create unique group id
-        arcpy.AddField_management(single_part,"GROUP_ID","LONG")
+        arcpy.AddField_management(single_part,"group_id","LONG")
         num = 1
-        with arcpy.da.UpdateCursor(single_part,"GROUP_ID") as cursor:
+        with arcpy.da.UpdateCursor(single_part,"group_id") as cursor:
             for row in cursor:
                 row[0] = num
                 cursor.updateRow(row)
@@ -242,7 +242,7 @@ class AquaticGrouping(object):
         arcpy.AddMessage("Joining COMID")
         #join species_pt layer with catchments to assign COMID
         sp_join = arcpy.SpatialJoin_analysis(species_pt,catchments,"sp_join","JOIN_ONE_TO_ONE","KEEP_COMMON","","INTERSECT")
-        sp_join = arcpy.DeleteIdentical_management(sp_join,["GROUP_ID","FEATUREID"])
+        sp_join = arcpy.DeleteIdentical_management(sp_join,["group_id","FEATUREID"])
         if len(arcpy.ListFields(sp_join,"COMID")) == 0:
             arcpy.AddField_management(sp_join,"COMID","LONG")
             with arcpy.da.UpdateCursor(sp_join,["FEATUREID","COMID"]) as cursor:
@@ -265,11 +265,11 @@ class AquaticGrouping(object):
             for dup in dup_comid:
                 arcpy.SelectLayerByAttribute_management(sp_join_lyr,"NEW_SELECTION","COMID = {0}".format(dup))
                 combine_groups = []
-                with arcpy.da.SearchCursor(sp_join_lyr,["GROUP_ID"]) as cursor:
+                with arcpy.da.SearchCursor(sp_join_lyr,["group_id"]) as cursor:
                     for row in cursor:
                         combine_groups.append(row[0])
-                arcpy.SelectLayerByAttribute_management(sp_join_lyr,"NEW_SELECTION","GROUP_ID IN ({0})".format(','.join(str(x) for x in combine_groups)))
-                with arcpy.da.UpdateCursor(sp_join_lyr,["GROUP_ID"]) as cursor:
+                arcpy.SelectLayerByAttribute_management(sp_join_lyr,"NEW_SELECTION","group_id IN ({0})".format(','.join(str(x) for x in combine_groups)))
+                with arcpy.da.UpdateCursor(sp_join_lyr,["group_id"]) as cursor:
                     for row in cursor:
                         row[0] = num
                         cursor.updateRow(row)
@@ -309,32 +309,43 @@ class ExportCSV(object):
             parameterType = "Required",
             direction = "Input")
 
+        comid = arcpy.Parameter(
+            displayName = "COMID Field",
+            name = "comid",
+            datatype = "Field",
+            parameterType = "Required",
+            direction = "Input")
+        comid.value = "COMID"
+        comid.parameterDependencies = [presence_flowlines.name]
+
+
         uid = arcpy.Parameter(
-            displayName = "UID Field (use COMID for aquatic modeling)",
+            displayName = "UID Field",
             name = "uid",
             datatype = "Field",
-            parameterType = "Required",
+            parameterType = "Optional",
             direction = "Input")
-
         uid.parameterDependencies = [presence_flowlines.name]
 
-        species_code = arcpy.Parameter(
-            displayName = "SPECIES_CODE Field",
-            name = "species_code",
+        gname = arcpy.Parameter(
+            displayName = "GNAME Field",
+            name = "gname",
             datatype = "Field",
             parameterType = "Required",
             direction = "Input")
+        gname.value = "GNAME"
+        gname.parameterDependencies = [presence_flowlines.name]
 
-        species_code.parameterDependencies = [presence_flowlines.name]
 
         group_id = arcpy.Parameter(
-            displayName = "GROUP_ID Field",
+            displayName = "group_id Field",
             name = "group_id",
             datatype = "Field",
             parameterType = "Required",
             direction = "Input")
-
+        group_id.value = "group_id"
         group_id.parameterDependencies = [presence_flowlines.name]
+
 
         ra = arcpy.Parameter(
             displayName = "RA Field",
@@ -342,7 +353,6 @@ class ExportCSV(object):
             datatype = "Field",
             parameterType = "Optional",
             direction = "Input")
-
         ra.parameterDependencies = [presence_flowlines.name]
 
         obsdate = arcpy.Parameter(
@@ -351,7 +361,6 @@ class ExportCSV(object):
             datatype = "Field",
             parameterType = "Optional",
             direction = "Input")
-
         obsdate.parameterDependencies = [presence_flowlines.name]
 
         csv_folder = arcpy.Parameter(
@@ -361,7 +370,7 @@ class ExportCSV(object):
             parameterType = "Required",
             direction = "Input")
 
-        params = [presence_flowlines,uid,species_code,group_id,ra,obsdate,csv_folder]
+        params = [presence_flowlines,comid,uid,gname,group_id,ra,obsdate,csv_folder]
         return params
 
     def isLicensed(self):
@@ -375,19 +384,26 @@ class ExportCSV(object):
 
     def execute(self,params,messages):
         presence_flowlines = params[0].valueAsText #QCd presence flowlines
-        uid = params[1].valueAsText #comid field
-        species_code = params[2].valueAsText #species_code field
-        group_id = params[3].valueAsText #group_id field
-        ra = params[4].valueAsText #ra field
-        obsdate = params[5].valueAsText #obsdate field
-        csv_folder = params[6].valueAsText
+        comid = params[1].valueAsText
+        uid = params[2].valueAsText #comid field
+        gname = params[3].valueAsText #species_code field
+        group_id = params[4].valueAsText #group_id field
+        ra = params[5].valueAsText #ra field
+        obsdate = params[6].valueAsText #obsdate field
+        csv_folder = params[7].valueAsText
 
-        with arcpy.da.SearchCursor(presence_flowlines,species_code) as cursor:
+        arcpy.AddField_management(presence_flowlines,"species_code","TEXT")
+        with arcpy.da.UpdateCursor(presence_flowlines,[gname,"species_code"]) as cursor:
             for row in cursor:
-                sp_code = row[0]
+                sp_code = (''.join([x[:4] for x in row[0].split()[0:2]])).lower()
+                row[1] = sp_code
+                cursor.updateRow(row)
 
         # dictionary - string in old name defines new name
-        fldsNamesDict={uid:'UID',species_code:'SPECIES_CODE',group_id:'GROUP_ID',ra:'RA',obsdate:'OBSDATE'}
+        fldsNamesDict={comid:'COMID','species_code':'SPECIES_CODE',group_id:'group_id'}
+        if uid:
+            fldsNamesDict[uid] = 'UID'
+
         if ra:
             fldsNamesDict[ra] = 'RA'
 
@@ -427,7 +443,9 @@ class ExportCSV(object):
         # export fc to shp using field mapping with new fields names
         arcpy.TableToTable_conversion(presence_flowlines,csv_folder,sp_code+'.csv',"",fieldmappings)
 
-        field_order = ["UID","SPECIES_CODE","GROUP_ID","RA","OBSDATE"]
+        field_order = ["COMID","SPECIES_CODE","group_id"]
+        if uid:
+            field_order.append("UID")
         if ra:
             field_order.append("RA")
         if obsdate:
@@ -437,5 +455,8 @@ class ExportCSV(object):
         df = pandas.read_csv(csv)
         df_reorder = df[field_order]
         df_reorder.to_csv(csv,index=False)
+
+        if os.path.exists(os.path.join(csv_folder,sp_code+'.txt.xml')):
+            os.remove(os.path.join(csv_folder,sp_code+'.txt.xml'))
 
         return
