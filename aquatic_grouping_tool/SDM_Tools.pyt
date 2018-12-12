@@ -288,6 +288,7 @@ class AquaticGrouping(object):
         flowlines_lyr = arcpy.MakeFeatureLayer_management(flowlines,"flowlines_lyr",expression)
         arcpy.AddJoin_management(flowlines_lyr,"COMID",sp_join,"COMID")
 
+        arcpy.env.qualifiedFieldNames = False
         #export presence flowlines
         arcpy.CopyFeatures_management(flowlines_lyr,output_lines)
 
@@ -458,5 +459,9 @@ class ExportCSV(object):
 
         if os.path.exists(os.path.join(csv_folder,sp_code+'.txt.xml')):
             os.remove(os.path.join(csv_folder,sp_code+'.txt.xml'))
+        if os.path.exists(os.path.join(csv_folder,sp_code+'.xml')):
+            os.remove(os.path.join(csv_folder,sp_code+'.xml'))
+        if os.path.exists(os.path.join(csv_folder,sp_code+'.csv.xml')):
+            os.remove(os.path.join(csv_folder,sp_code+'.csv.xml'))
 
         return
