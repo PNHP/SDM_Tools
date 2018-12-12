@@ -459,5 +459,9 @@ class ExportCSV(object):
 
         if os.path.exists(os.path.join(csv_folder,sp_code+'.txt.xml')):
             os.remove(os.path.join(csv_folder,sp_code+'.txt.xml'))
+        if os.path.exists(os.path.join(csv_folder,sp_code+'.xml')):
+            os.remove(os.path.join(csv_folder,sp_code+'.xml'))
+        if os.path.exists(os.path.join(csv_folder,sp_code+'.csv.xml')):
+            os.remove(os.path.join(csv_folder,sp_code+'.csv.xml'))
 
         return
