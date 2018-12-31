@@ -163,7 +163,7 @@ class AquaticGrouping(object):
         #calculate separation distance to be used in tools. use half of original minus
         #1 to account for 1 meter buffer and overlapping buffers
         sep_dist = int(sep_dist)
-        sep_dist = (sep_dist/2)-1
+        sep_dist = (sep_dist/2)-2
 
         #create temporary unique id for use in join field later
         i=1
@@ -227,7 +227,7 @@ class AquaticGrouping(object):
 
         #join group id of buffered flowlines to closest points
         s_join = arcpy.SpatialJoin_analysis(target_features=species_pt, join_features=single_part, out_feature_class="s_join", join_operation="JOIN_ONE_TO_ONE", join_type="KEEP_ALL", match_option="CLOSEST", search_radius=snap_dist, distance_field_name="")
-
+MANY",join_type = "KEEP_ALL",match_option="INTERSEC
         #join field to original dataset
         join_field = [field.name for field in arcpy.ListFields(s_join)]
         join_field = join_field[-1]
