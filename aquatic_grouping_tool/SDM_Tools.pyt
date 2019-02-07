@@ -360,7 +360,7 @@ class ExportCSV(object):
             parameterType = "Required",
             direction = "Input")
 
-        params = [presence_flowlines,comid,huc12,uid,gname,group_id,ra,obsdate,csv_folder]
+        params = [presence_flowlines,comid,uid,gname,group_id,ra,obsdate,csv_folder]
         return params
 
     def isLicensed(self):
