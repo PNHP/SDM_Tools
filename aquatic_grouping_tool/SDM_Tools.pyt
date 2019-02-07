@@ -375,13 +375,12 @@ class ExportCSV(object):
     def execute(self,params,messages):
         presence_flowlines = params[0].valueAsText #QCd presence flowlines
         comid = params[1].valueAsText
-        huc12 = params[2].valueAsText
-        uid = params[3].valueAsText #comid field
-        gname = params[4].valueAsText #species_code field
-        group_id = params[5].valueAsText #group_id field
-        ra = params[6].valueAsText #ra field
-        obsdate = params[7].valueAsText #obsdate field
-        csv_folder = params[8].valueAsText
+        uid = params[2].valueAsText #comid field
+        gname = params[3].valueAsText #species_code field
+        group_id = params[4].valueAsText #group_id field
+        ra = params[5].valueAsText #ra field
+        obsdate = params[6].valueAsText #obsdate field
+        csv_folder = params[7].valueAsText
 
         arcpy.AddField_management(presence_flowlines,"species_code","TEXT")
         with arcpy.da.UpdateCursor(presence_flowlines,[gname,"species_code"]) as cursor:
