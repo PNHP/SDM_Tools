@@ -43,10 +43,9 @@ class AquaticGrouping(object):
         software.filter.type = "ValueList"
         software.filter.list = ["ArcMap","ArcGIS Pro"]
 
-
-        species_in = arcpy.Parameter(
+        species_pt = arcpy.Parameter(
             displayName = "Input layers of aquatic species observations",
-            name = "species_in",
+            name = "species_pt",
             datatype = "GPFeatureLayer",
             parameterType = "Optional",
             direction = "Input",
@@ -110,7 +109,7 @@ class AquaticGrouping(object):
             parameterType = "Required",
             direction = "Input")
 
-        params = [software,species_in,species_code,flowlines,catchments,network,dams,sep_dist,snap_dist,output_db]
+        params = [software,species_pt,species_code,flowlines,catchments,network,dams,sep_dist,snap_dist,output_db]
         return params
 
     def isLicensed(self):
