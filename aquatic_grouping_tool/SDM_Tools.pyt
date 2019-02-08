@@ -44,9 +44,9 @@ class AquaticGrouping(object):
         software.filter.list = ["ArcMap","ArcGIS Pro"]
 
 
-        species_pt = arcpy.Parameter(
+        species_in = arcpy.Parameter(
             displayName = "Input layers of aquatic species observations",
-            name = "species_pt",
+            name = "species_in",
             datatype = "GPFeatureLayer",
             parameterType = "Optional",
             direction = "Input",
@@ -110,7 +110,7 @@ class AquaticGrouping(object):
             parameterType = "Required",
             direction = "Input")
 
-        params = [software,species_pt,species_code,flowlines,catchments,network,dams,sep_dist,snap_dist,output_db]
+        params = [software,species_in,species_code,flowlines,catchments,network,dams,sep_dist,snap_dist,output_db]
         return params
 
     def isLicensed(self):
@@ -229,6 +229,14 @@ class AquaticGrouping(object):
                     for row in cursor:
                         row[1] = row[0]
                         cursor.updateRow(row)
+
+            del_features = 0
+            with arcpy.da.UpdateCursor(sp_join,"group_id") as cursor:
+                for row in cursor:
+                    if row[0] is None:
+                        del_features+=1
+                        cursor.deleteRow()
+            arcpy.AddMessage(del_features+" features were not included because they were outside the snap_distance")
 
             #obtain list of duplicate COMID because these are reaches assigned to multiple groups
             freq = arcpy.Frequency_analysis(sp_join,"freq","COMID")
@@ -360,7 +368,7 @@ class ExportCSV(object):
             parameterType = "Required",
             direction = "Input")
 
-        params = [presence_flowlines,comid,huc12,uid,gname,group_id,ra,obsdate,csv_folder]
+        params = [presence_flowlines,comid,uid,gname,group_id,ra,obsdate,csv_folder]
         return params
 
     def isLicensed(self):
@@ -375,13 +383,12 @@ class ExportCSV(object):
     def execute(self,params,messages):
         presence_flowlines = params[0].valueAsText #QCd presence flowlines
         comid = params[1].valueAsText
-        huc12 = params[2].valueAsText
-        uid = params[3].valueAsText #comid field
-        gname = params[4].valueAsText #species_code field
-        group_id = params[5].valueAsText #group_id field
-        ra = params[6].valueAsText #ra field
-        obsdate = params[7].valueAsText #obsdate field
-        csv_folder = params[8].valueAsText
+        uid = params[2].valueAsText #comid field
+        gname = params[3].valueAsText #species_code field
+        group_id = params[4].valueAsText #group_id field
+        ra = params[5].valueAsText #ra field
+        obsdate = params[6].valueAsText #obsdate field
+        csv_folder = params[7].valueAsText
 
         arcpy.AddField_management(presence_flowlines,"species_code","TEXT")
         with arcpy.da.UpdateCursor(presence_flowlines,[gname,"species_code"]) as cursor:
