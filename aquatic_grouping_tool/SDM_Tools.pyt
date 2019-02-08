@@ -49,7 +49,7 @@ class AquaticGrouping(object):
             datatype = "GPFeatureLayer",
             parameterType = "Optional",
             direction = "Input",
-            multiValue = True)
+            multiValue = False)
 
         species_code = arcpy.Parameter(
             displayName = "Species identifier field used in input layers",
@@ -133,7 +133,8 @@ class AquaticGrouping(object):
         snap_dist = params[8].valueAsText #distance to flowline beyond which observations are not included
         output_db = params[9].valueAsText #output presence flowlines
 
-        data_in = species_in.split(';')
+        #data_in = species_in.split(';')
+        data_in = [species_in]
         data_out = []
         counter = 1
         for d in data_in:
@@ -235,7 +236,7 @@ class AquaticGrouping(object):
                     if row[0] is None:
                         del_features+=1
                         cursor.deleteRow()
-            arcpy.AddMessage(del_features+" features were not included because they were outside the snap_distance")
+            arcpy.AddMessage(str(del_features)+" features were not included because they were outside the snap_distance")
 
             #obtain list of duplicate COMID because these are reaches assigned to multiple groups
             freq = arcpy.Frequency_analysis(sp_join,"freq","COMID")
