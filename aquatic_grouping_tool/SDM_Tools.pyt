@@ -49,7 +49,7 @@ class AquaticGrouping(object):
             datatype = "GPFeatureLayer",
             parameterType = "Optional",
             direction = "Input",
-            multiValue = False)
+            multiValue = True)
 
         species_code = arcpy.Parameter(
             displayName = "Species identifier field used in input layers",
@@ -58,6 +58,7 @@ class AquaticGrouping(object):
             parameterType = "Required",
             direction = "Input")
         species_code.parameterDependencies = [species_pt.name]
+        species_code.value = "GNAME"
 
         flowlines = arcpy.Parameter(
             displayName = "NHD flowlines",
@@ -133,8 +134,8 @@ class AquaticGrouping(object):
         snap_dist = params[8].valueAsText #distance to flowline beyond which observations are not included
         output_db = params[9].valueAsText #output presence flowlines
 
-        #data_in = species_in.split(';')
-        data_in = [species_in]
+        data_in = species_in.split(';')
+        #data_in = [species_in]
         data_out = []
         counter = 1
         for d in data_in:
@@ -144,9 +145,9 @@ class AquaticGrouping(object):
 
         join_id = 1
         for i,o in zip(data_in,data_out):
-            if len(arcpy.ListFields(i,"temp_join_id")) == 0:
-                arcpy.AddField_management(i,"temp_join_id","TEXT")
-            with arcpy.da.UpdateCursor(i,"temp_join_id") as cursor:
+            if len(arcpy.ListFields(i,"tmp_joinid")) == 0:
+                arcpy.AddField_management(i,"tmp_joinid","TEXT")
+            with arcpy.da.UpdateCursor(i,"tmp_joinid") as cursor:
                 for row in cursor:
                     row[0]=str(join_id)
                     cursor.updateRow(row)
@@ -290,7 +291,7 @@ class AquaticGrouping(object):
             f = os.path.join(output_db,file)
             arcpy.Delete_management(f)
         for i in data_in:
-            arcpy.DeleteField_management(i,"temp_join_id")
+            arcpy.DeleteField_management(i,"tmp_joinid")
 
         return
 
